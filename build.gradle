@@ -18,6 +18,11 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
 
     implementation 'org.slf4j:slf4j-simple:1.7.36'
+
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.9.2'
+
+    implementation group: 'com.launchdarkly', name: 'okhttp-eventsource', version: '2.4.0'
+
 }
 
 test {
