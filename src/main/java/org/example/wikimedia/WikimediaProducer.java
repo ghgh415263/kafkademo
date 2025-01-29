@@ -3,17 +3,12 @@ package org.example.wikimedia;
 import com.launchdarkly.eventsource.EventSource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
-import org.example.ProducerMain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class WikimediaProducer {
-
-    private static final Logger log = LoggerFactory.getLogger(ProducerMain.class.getName());
     public static void main(String[] args) throws InterruptedException {
 
         Properties props = new Properties();
@@ -36,7 +31,7 @@ public class WikimediaProducer {
         Producer<String, String> producer = new KafkaProducer<>(props);
 
         //이 객체는 클라이언트가 서버와 지속적으로 연결을 유지하면서 서버에서 전송하는 이벤트를 수신 -> 수신한 데이터를 카프카에 보냄
-        EventSource eventSource = new EventSource.Builder(new WikimediaEventHandler("topic_dev", producer), URI.create("https://stream.wikimedia.org/v2/stream/recentchange"))
+        EventSource eventSource = new EventSource.Builder(new WikimediaEventHandler("wikimedia", producer), URI.create("https://stream.wikimedia.org/v2/stream/recentchange"))
                 .build();
 
         /* 생산 ack 옵션
