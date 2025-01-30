@@ -5,7 +5,7 @@
    - 각각의 브로커는 id가 있다
    - 컨슈머나 프로듀서가 어느 브로커든 연결되면 나머지 클러스터의 브로커들과 연결된다.
    - 최소 추천 브로커는 3개 -> 백개 넘개 만들 수 도 있다
-   - 토픽의 파티션들은 broker들에 나뉜다 =>  파티션과 브로커가 많아질 수록 여러 곳에 나뉜다. <br><br>
+   - 토픽의 파티션들은 broker들에 나뉜다 =>  파티션과 브로커가 많아질 수록 여러 곳에 나뉜다.
 ![image](https://github.com/user-attachments/assets/8c222cbf-2dd5-4f4d-bf42-ea493e64c6bb)
 <br><br>
 
@@ -95,6 +95,14 @@
    - send로 데이터를 보내면 알아서 배치로 보냄 -> 어느정도 데이터를 모아서 보낸다.
    - flush하면 데이터를 보낸다. close 직전에 해줘야함.
 
+3. Retry
+   - Producer가 메시지를 브로커에 전송할 때 실패하면 자동으로 재시도
+   - 메시지 전송 실패 시 즉시 재시도하지 않고 retry.backoff.ms 만큼 대기
+   - retries 횟수만큼 재시도 후에도 실패하면 예외 발생 (TimeoutException)
+   - acks=all을 사용하면 리더 브로커가 변경된 경우에도 재시도 가능
+   - retries 값이 크면 중복 메시지가 전송될 가능성이 있음 → Idempotence 설정 (enable.idempotence=true) 추천
+   - max.in.flight.requests.per.connection 값이 너무 크면 순서 보장이 어려울 수 있음
+
 <br>
 
 <h1>Consumer</h1>
@@ -131,6 +139,15 @@
      + 컨슈머가 일시적으로 연결이 끊겨도 Group Coordinator가 기존 멤버로 유지.
      + 같은 멤버 ID를 가진 컨슈머가 다시 연결되면 기존 파티션 할당 유지.
      + 완전히 새로운 컨슈머가 추가되거나, 기존 멤버 ID가 없는 컨슈머만 리밸런싱 발생.
+
+4. Retry
+   - 오프셋을 Commit하지 않고 재처리
+     + 자동 커밋을 비활성화 (enable.auto.commit=false)
+     + 예외 발생 시 오프셋을 Commit하지 않으면 같은 메시지를 다시 소비할 수 있음
+     + 무한 루프 발생 가능 → 실패한 메시지만 계속 가져올 수 있음
+   - Dead Letter Queue (DLQ) 사용
+     + Kafka에서 실패한 메시지를 별도의 토픽(DLQ)으로 보내고, 나중에 재처리하는 방법.
+     + 무한 루프 방지책이다
 <br>
 
 <h1>Command</h1>
@@ -156,3 +173,33 @@
 4. 임시 실행결과 보기
    - `--reset-offsets` 옵션으로 실행
    - Kafka Consumer 오프셋을 재설정하려면 `--reset-offsets`와 함께 적절한 옵션을 사용합니다. 이 명령은 데이터를 다시 읽거나 건너뛰도록 설정하는 데 영향을 미치므로, 적용 전 `--dry-run`으로 확인하는 것이 좋습니다.
+<br>
+
+<h1>Kafka Connect</h1>
+
+1. 역할
+   - Kafka와 외부 시스템(데이터베이스, 파일 시스템, 클라우드 서비스 등)을 쉽게 연결할 수 있도록 도와주는 프레임워크
+   - 코드를 작성하지 않고 다양한 데이터 소스를 연동
+   - 대량의 데이터를 안정적으로 처리할 수 있도록 병렬 처리 및 오류 복구 기능을 제공
+
+2. 컴포넌트
+   - Source Connector (소스 커넥터)
+     + 외부 시스템 → Kafka로 데이터를 가져오는 역할
+     + 예: MySQL, PostgreSQL, MongoDB, S3, HTTP API 등의 데이터를 Kafka로 전송
+   - Sink Connector (싱크 커넥터)
+     + Kafka → 외부 시스템으로 데이터를 전송하는 역할
+     + 예: Kafka 데이터를 MySQL, Elasticsearch, HDFS, S3 등에 저장
+
+3. 케넉트 클러스터
+   - 여러개의 커넥터로 구성되어 있음.
+   - Worker: Kafka Connect 프로세스 (Connector 실행 담당). Standalone 모드에서는 1개의 Worker, Distributed 모드에서는 여러 개의 Worker가 클러스터로 동작
+   - Connector: 데이터 소스 ↔ Kafka 연결 (Source/Sink)
+   - Task: Connector 내부에서 병렬 처리되는 작업
+![image](https://github.com/user-attachments/assets/085dafab-a941-4824-a14d-3782781b43aa)
+
+4. 실행 (예시 Elasticsearch)
+   - Kafka + Zookeeper 실행 중
+   - Elasticsearch 실행 중
+   - Kafka Connect 실행 가능
+   - Kafka Connect Elasticsearch 플러그인 설치 후 connect에 등록
+
