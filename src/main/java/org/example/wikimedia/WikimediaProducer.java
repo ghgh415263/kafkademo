@@ -22,7 +22,7 @@ public class WikimediaProducer {
          * 3. enable.idempotence=true      요청1을 보내고 ack가 정상적으로 오다가 소실되면 retry되는데... 그걸 kafka가 알아채고 바로 ack 다시 날려줌
          * 4. retries=Max
          * 5. delivery.timeout.ms=120000
-         * 6. max.in.flight.requests.per.connection=5  connection 한번에 요청(배치) 5번
+         * 6. max.in.flight.requests.per.connection=5    ack를 받지 않고 한번에 보낼 수 있는 최대 메시지 배치의 갯수
          */
         props.put("enable.idempotence", "true");
         props.put("acks", "all");
