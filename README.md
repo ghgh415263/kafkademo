@@ -231,11 +231,42 @@
    - Producer가 잘못된 데이터 형식을 보낼 경우, Schema Registry에서 거부하여 데이터 무결성을 유지
    - API를 통해 Schema 등록, 업데이트, 버전 관리 가능
 
+![image](https://github.com/user-attachments/assets/b29abdc4-b0e0-4128-b574-97c0d38b6b11)
+
 2. 동작
-   - Producer가 데이터를 Kafka로 전송 -> 메시지를 보내기 전에 Schema Registry에서 Schema ID 확인 -> 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송
-   - Schema Registry가 Schema 저장 및 관리 -> 새로운 Schema가 등록되면 버전 관리 -> 기존 Schema와 비교하여 호환성 검사
-   - Consumer가 데이터를 읽고 역직렬화(Deserialize) -> Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환
+   - Producer가 데이터를 Kafka로 전송
+     + 메시지를 보내기 전에 Schema Registry에서 Schema ID 확인
+     + 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송
+   - Schema Registry가 Schema 저장 및 관리
+     + 새로운 Schema가 등록되면 버전 관리
+     + 기존 Schema와 비교하여 호환성 검사
+   - Consumer가 데이터를 읽고 역직렬화(Deserialize)
+     + Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환
   
 3. 장점
-   - Kafka 브로커에 부하를 줄이기 위해 -> Schema를 Kafka 내부에서 관리하면 브로커가 부담을 더 가지게 됨 -> Schema Registry를 분리하면 Kafka 브로커의 성능을 유지할 수 있음.
-   - 독립적인 Schema 관리 가능 -> Kafka 이외의 시스템에서도 Schema를 사용할 수 있음 -> 예를 들어, Kafka가 아닌 다른 데이터베이스나 API 서비스에서도 Schema Registry를 활용 가능.
+   - Kafka 브로커에 부하를 줄이기 위해
+     + Schema를 Kafka 내부에서 관리하면 브로커가 부담을 더 가지게 됨
+     + Schema Registry를 분리하면 Kafka 브로커의 성능을 유지할 수 있음.
+   - 독립적인 Schema 관리 가능
+     + Kafka 이외의 시스템에서도 Schema를 사용할 수 있음
+     + 예를 들어, Kafka가 아닌 다른 데이터베이스나 API 서비스에서도 Schema Registry를 활용 가능.
+<br>
+
+<h1>Kafka 초기설정</h1>
+
+1. Partition 초기설정
+   - 특정 Topic의 Partition을 증가시키면 Key ordering이 무너진다.
+   - 설정 예시 
+     + 브로커가 6개이하면 브로커 갯수 * 3
+     + 브로커가 12개이상이면 브로커 갯수 *2
+   - 성능에 대한 것들은 정답이 있는 것이 아니고 테스트를 통해서 최적화해야함. producer의 throughtput과 consumer의 병렬성이 중요하다.
+   - zookeeper를 사용하면 클러스터내에 최대 200,000 partition만 설정가능. 또한 브로커당 약 4000개 이하의 partition을 추천함.
+   - kraft 모드면 수백만개의 partition 가능
+   - 만약 20만개가 넘는 partiton을 운영하야한다면, 그냥 클러스터를 하나 더 만드는 것도 방법이다.
+  
+2. Replica Factor 초기설정
+   - 보통 최소2, 최대4
+   - replica factor를 증가시키면 kafka에 부하가 증가한다. disk space 와 latancy
+   - 내구성을 위해서는 높히고, 더 나은 성능을 위해서는 낮춘다. 혹은 min.insync.replicas 설정한다.
+<br>
+
