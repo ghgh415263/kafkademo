@@ -36,7 +36,8 @@ public class ProducerMain {
              *      send() 호출 후, 콜백을 통해 전송 결과를 받을 수 있습니다.
              * 2. Sender 쓰레드
              *      Kafka Producer 내부에서 메시지 전송을 담당하는 주요 쓰레드입니다.
-             *      RecordAccumulator에 쌓인 메시지를 배치 단위로 관리하고, 적절한 시점에 이를 **kafka-producer-network-thread**에 전달하여 네트워크를 통한 전송을 진행합니다.
+             *      sender 스레드는 RecordAccumulator에 저장된 배치들을 모니터링합니다. RecordAccumulator는 파티션 별로 배치를 모은 자료구조입니다.
+             *      sender 스레드는 이 배치들이 **batch.size**에 도달하거나, linger.ms 시간이 경과하는 등 전송 가능한 조건이 되면, 해당 배치를 Kafka 브로커로 전송합니다. (kafka-producer-network-thread 한테 전송을 위임)
              *      기본적으로 1개의 Sender 쓰레드가 생성됩니다.
              * 3. kafka-producer-network-thread
              *      Sender 쓰레드가 준비한 배치를 브로커로 전송하는 실제 네트워크 I/O 스레드입니다.
@@ -46,10 +47,9 @@ public class ProducerMain {
              *      I/O 스레드는 네트워크와 관련된 작업을 수행하며, kafka-producer-network-thread와는 별개의 스레드일 수 있습니다.
              *      파티션 리더의 상태 확인 및 관리, 데이터를 클러스터의 적절한 브로커로 라우팅, I/O 작업 대기 및 처리
              *
-             * 추가 내용
-             * 설정에 따라 더 많은 쓰레드가 생성될 수 있음
-             * 예를 들어, max.in.flight.requests.per.connection 값을 조정하여 배치 전송 병렬 처리를 활성화하면, **여러 kafka-producer-network-thread**를 생성할 수 있습니다.
-             * 또한 linger.ms 값이 길어지면 배치를 더 많이 모을 때까지 기다릴 수 있어 네트워크 스레드가 더 자주 사용될 수 있습니다.
+             *
+             *
+             * max.in.flight.requests.per.connection 값이 5일 때, sender 스레드는 동시에 전송할 수 있는 배치 수가 5개로 제한되므로, 그 이상의 배치가 전송 중이라면 추가적인 배치는 대기하게 됩니다.
              */
 
             /*
