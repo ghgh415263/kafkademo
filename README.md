@@ -181,6 +181,7 @@
    - Kafka와 외부 시스템(데이터베이스, 파일 시스템, 클라우드 서비스 등)을 쉽게 연결할 수 있도록 도와주는 프레임워크
    - 코드를 작성하지 않고 다양한 데이터 소스를 연동
    - 대량의 데이터를 안정적으로 처리할 수 있도록 병렬 처리 및 오류 복구 기능을 제공
+   - 이미 저장된 데이터를 카프카로 활용하려고 할때 사용한다.
 
 2. 컴포넌트
    - Source Connector (소스 커넥터)
@@ -202,4 +203,39 @@
    - Elasticsearch 실행 중
    - Kafka Connect 실행 가능
    - Kafka Connect Elasticsearch 플러그인 설치 후 connect에 등록
+<br>
 
+<h1>Kafka Streams</h1>
+
+1. 역할
+   - Kafka 내에서 실시간으로 데이터(스트림)를 처리하고 변환할 수 있도록 도와주는 분산형 스트리밍 애플리케이션을 개발할 때 사용
+   - 실시간 스트리밍 처리: Kafka에서 지속적으로 데이터를 읽고 처리하여 빠른 실시간 데이터 변환 및 분석 가능.
+   - Kafka와 강력한 통합: Kafka의 Producer & Consumer 역할을 동시에 수행하며, 별도의 메시지 큐 없이 직접 데이터를 처리 가능.
+   - Streams API 제공: 데이터를 변환, 필터링, 그룹화하는 등의 처리를 위한 다양한 API 제공 (map(), filter(), groupBy(), join(), windowing() 등).
+
+2. 동작
+   - Kafka Streams는 Producer + Consumer 역할을 동시에 수행하며, 토픽(Topic)으로부터 데이터를 가져와 가공한 후, 다시 Kafka 토픽에 저장하는 방식으로 동작
+
+3. 예시
+   - 데이터 통계치: 데이터를 읽어와서 SUM이나 COUNT 토픽에 결과값을 넣는다.
+   - 실시간 로그 분석
+   - IoT 센서 데이터 처리
+<br>
+
+<h1>Kafka Schema Registry</h1>
+
+1. 역할
+   - Kafka 메시지의 데이터 구조(Schema)를 중앙에서 관리하는 서비스 (카프카와 같이 쓰는 독립된 서비스) -> 이것을 통해서 카프카는 데이터의 형태에 대해서 신경쓰지 않고 데이터를 저장한다.
+   - Producer와 Consumer가 같은 데이터 구조(Schema)를 공유하도록 강제할 수 있음
+   - 새로운 필드 추가 등 Schema 변경 시에도 호환성 유지 가능
+   - Producer가 잘못된 데이터 형식을 보낼 경우, Schema Registry에서 거부하여 데이터 무결성을 유지
+   - API를 통해 Schema 등록, 업데이트, 버전 관리 가능
+
+2. 동작
+   - Producer가 데이터를 Kafka로 전송 -> 메시지를 보내기 전에 Schema Registry에서 Schema ID 확인 -> 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송
+   - Schema Registry가 Schema 저장 및 관리 -> 새로운 Schema가 등록되면 버전 관리 -> 기존 Schema와 비교하여 호환성 검사
+   - Consumer가 데이터를 읽고 역직렬화(Deserialize) -> Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환
+  
+3. 장점
+   - Kafka 브로커에 부하를 줄이기 위해 -> Schema를 Kafka 내부에서 관리하면 브로커가 부담을 더 가지게 됨 -> Schema Registry를 분리하면 Kafka 브로커의 성능을 유지할 수 있음.
+   - 독립적인 Schema 관리 가능 -> Kafka 이외의 시스템에서도 Schema를 사용할 수 있음 -> 예를 들어, Kafka가 아닌 다른 데이터베이스나 API 서비스에서도 Schema Registry를 활용 가능.
