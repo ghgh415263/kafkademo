@@ -35,6 +35,19 @@ public class ConsumerMainAssignment {
         *     CooperativeStickyAssignor
         */
 
+        /**
+         * Kafka Consumer의 주요 내부 쓰레드
+         *
+         * Application Thread → poll()을 실행하는 메인 쓰레드
+         * Heartbeat Thread → 컨슈머 그룹 유지
+         * Coordinator Communication Thread → 리밸런싱 및 오프셋 커밋 처리
+         *
+         *
+         * Kafka Consumer는 thread safe하지 않다.
+         * 내부적으로 하나의 TCP 연결과 세션을 유지하기 때문에 여러 스레드에서 동시에 접근하면 Race Condition이 발생
+         *
+         */
+
         KafkaConsumer<String,String> consumer = new KafkaConsumer<>(props);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -54,7 +67,7 @@ public class ConsumerMainAssignment {
 
                 log.info("============= polling =================");
 
-                ConsumerRecords<String,String> records = consumer.poll(Duration.ofMillis(500));  // 기본 auto.commit.interval.ms = 5000로 설정되어 있어서, poll하면 타이머시작 5초이상이 지나고 poll가 또 호출되면 async로 오토 커밋 ( at least once )
+                ConsumerRecords<String,String> records = consumer.poll(Duration.ofMillis(500));  // 기본 auto.commit.interval.ms = 5000로 설정되어 있어서, poll하면 타이머시작 5초이상이 지나고 poll가 또 호출되면 async로 오토 커밋
 
                 //폴링 방식임.
                 for (ConsumerRecord<String,String> record : records) {
