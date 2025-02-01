@@ -55,7 +55,7 @@ public class ProducerMain {
             /*
              * Kafka Producer의 배치(batch)
              *
-             * 1. send() 메서드를 호출하면, 메시지가 RecordAccumulator에 추가되어 배치로 묶입니다.
+             * 1. send() 메서드를 호출하면, 메시지가 RecordAccumulator에 추가되어 배치로 묶입니다. 그리고 future 받음
              * 2. RecordAccumulator는 이 배치를 batches 큐에 저장하고, 이를 관리합니다. (RecordAccumulator는 batches라는 Map을 가지고 있는데, 이 Map의 Key는 TopicPartition이고, Value는 Deque<RecordBatch>이다.)
              * 3. 큐에 저장된 배치는 전송 조건이 만족되면 kafka-producer-network-thread에 의해 브로커로 전송됩니다.
              *      배치 크기(batch.size): 배치가 설정된 크기를 초과하면 전송됩니다.
