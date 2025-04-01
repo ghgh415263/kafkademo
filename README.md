@@ -20,46 +20,28 @@
 
 3. Zookeeper
 
-## 🔥 **1. 주요 역할**  
+### **왜 여러 개의 Zookeeper를 사용할까요?**
+생산 환경에서는 **Zookeeper 노드 여러 개(Ensemble)**를 운영하는 것이 **장애 대응**을 위해 매우 중요합니다. 만약 Zookeeper 서버 하나가 다운되더라도, **대다수의 노드**가 정상적으로 작동하고 있다면 **Zookeeper Ensemble**는 계속 기능을 수행할 수 있습니다.
 
-### 📌 1️⃣ **브로커 관리 & 상태 추적**  
-- Kafka 브로커가 시작되면 **Zookeeper에 자신을 등록**.  
-- 브로커가 비정상 종료되면 자동으로 **등록 해제**되어 장애 감지 가능.
-- 브로커는 일정 시간마다 ZooKeeper에 heartBeat를 보낸다.
-- heartBeat가 제한 시간내에 안오면 브로커 세션을 종료. -> 컨트롤러가 zookeeper를 watch하고 있으므로 컨트롤러도 이를 인지하여 리더 선출 및 리플리카 재배치등의 복구작업 수행 -> 새로운 메타데이터 전파
+### **Zookeeper와 Kafka의 상호작용**
 
-### 📌 2️⃣ **컨트롤러(Controller) 선출**  
-- Kafka 클러스터에서 **하나의 브로커를 컨트롤러로 지정**.  
-- 컨트롤러는 **클러스터 변경 사항(브로커 추가/삭제, 토픽 생성/삭제 등)을 관리**.
-- 토픽 생성 요청 -> 요청 받은 브로커는 토픽 정보를 zookeeper에 저장시킴 (파티션 갯수, 리플리카 정보 등) -> 컨트롤러가 zookeeper를 watch하고 있으므로 컨트롤러가 이를 감지 -> 새로운 메타데이터 전파
+1. **브로커 등록**: 
+   - Kafka 브로커가 시작되면 **Zookeeper에 자신을 등록**합니다. 
+   - Zookeeper는 **클러스터 내 모든 활성 브로커**의 목록을 유지합니다.
 
-### 📌 3️⃣ **파티션 리더 정보 저장**  
-- 각 **파티션의 리더 브로커 정보**를 저장.
-- 리더 브로커가 죽으면 컨트롤러가 **새로운 리더를 선출하고 Zookeeper에 반영**.  
+2. **리더 선출**: 
+   - 각 파티션에 대해 **Zookeeper는 리더 브로커**를 추적합니다.
+   - 만약 리더 브로커가 다운되면, **Zookeeper는 복제본 중에서 새로운 리더를 선출**하여 작업을 이어갑니다. (컨트롤러가 **새로운 리더를 선출하고 Zookeeper에 반영**)
 
-### 📌 4️⃣ **토픽 & 파티션 메타데이터 관리**  
-- Kafka의 **토픽, 파티션 개수, 복제본 정보** 등을 저장.  
-- 새로운 토픽이 생성되면 **컨트롤러가 브로커들에게 반영하도록 지시**.  
+3. **클러스터 메타데이터 관리**: 
+   - **Zookeeper는 Kafka 클러스터의 메타데이터**를 저장합니다. 
+   - 여기에는 **토픽, 파티션, 복제본** 등의 정보가 포함됩니다.
 
-### 📌 5️⃣ **클러스터 변경 사항 감지 및 알림**  
-- 브로커 추가/삭제, 토픽 생성/삭제 등의 **변경 사항을 감지**.  
-- 컨트롤러가 이를 반영하고 **다른 브로커들에게 변경 사항을 전달**.  
+4. **소비자 오프셋**: 
+   - **Zookeeper는 소비자가 특정 토픽에서 현재 읽고 있는 오프셋**을 저장할 수 있습니다.
+   - 하지만 **최신 Kafka 버전에서는** 소비자 오프셋을 **Kafka 자체의 토픽**(예: `__consumer_offsets`)에 저장합니다. 예전에는 Zookeeper가 오프셋을 저장했으나, 현재는 Kafka 자체가 이를 관리합니다.
 
-### 📌 6️⃣ **Zookeeper 자체 ACL 관리**  
-- Zookeeper의 `zNode`(데이터 저장 노드)에 대한 접근 권한을 관리.  
-- 하지만 Kafka의 ACL(사용자 인증 및 권한 관리)은 Kafka 내부에서 별도로 처리됨.  
-
----
-
-## 🚀 **2. Kafka 2.8.0 이후 Zookeeper 제거(KRaft 도입)**  
-- Kafka 2.8.0부터 **Zookeeper 없이 동작하는 KRaft 모드** 도입.  
-- Kafka 3.x 이후 점진적으로 **Zookeeper 의존도를 줄이는 중**.  
-- **향후 Kafka에서는 Zookeeper를 완전히 제거할 예정.**  
-
----
-
-
-4. Zookeeper 기반 vs KRaft(Kafka Raft) 기반
+5. Zookeeper 기반 vs KRaft(Kafka Raft) 기반
    - Kafka Controller는 클러스터를 관리하는 중앙 노드이며, Zookeeper를 사용할 수도 있고 KRaft 방식을 사용할 수도 있음.
    - Zookeeper 기반 Kafka (기존 방식)
      + Zookeeper가 클러스터의 메타데이터를 관리
@@ -117,9 +99,9 @@
    - Recovery
      + 브로커 일시적 다운:	retries 설정을 활용하여 자동 재시도
      + 리더 브로커 장애:	메타데이터 업데이트 후 새로운 리더로 전환
-     + 네트워크 장애:	delivery.timeout.ms와 request.timeout.ms로 타임아웃 설정
-     + 성능 최적화:	linger.ms와 batch.size를 조정하여 메시지 배치 처리
-     + 데이터 유실 방지:	acks=all 및 min.insync.replicas 설정으로 안전한 저장 보장
+     + 네트워크 장애:	delivery.timeout.ms(요청 및 재시도까지 포함한 타임아웃)와 request.timeout.ms(하나의 요청에 대한 타임아웃)로 타임아웃 설정
+     + 성능 최적화:	linger.ms(배치 쌓는 대기시간)와 batch.size를 조정하여 메시지 배치 처리
+     + 데이터 유실 방지:	acks=all 및 min.insync.replicas 설정으로 안전한 저장 보장 (리더를 포함해 최소한 몇 개의 복제본이 데이터와 동기화되어 있어야 하는지 지정하는 것, **acks=all**과는 다르게, **min.insync.replicas**는 복제본의 동기화 상태를 기준으로 메시지를 처리하며, 지정된 수의 복제본이 동기화되지 않으면 메시지가 전송되지 않습니다.)
 
 2. 데이터 전송
    - properties로 연결할 카프카에 대한 정보 설정
@@ -131,8 +113,8 @@
    - 메시지 전송 실패 시 즉시 재시도하지 않고 retry.backoff.ms 만큼 대기
    - retries 횟수만큼 재시도 후에도 실패하면 예외 발생 (TimeoutException)
    - acks=all을 사용하면 리더 브로커가 변경된 경우에도 재시도 가능
-   - retries 값이 크면 중복 메시지가 전송될 가능성이 있음 → Idempotence 설정 (enable.idempotence=true) 추천
-   - max.in.flight.requests.per.connection 값이 너무 크면 순서 보장이 어려울 수 있음
+   - retries 값이 크면 중복 메시지가 전송될 가능성이 있음 → Idempotence 설정 (enable.idempotence=true) 추천 (같은 메시지를 여러 번 전송해도 실제로 카프카에는 한 번만 저장)   프로듀서id + seq 로 중복확인 (seq는 프로듀서가 붙인다.)
+   - max.in.flight.requests.per.connection 값이 너무 크면 순서 보장이 어려울 수 있음. 특히, 네트워크 장애나 응답 순서의 차이로 인해 발생할 수 있습니다.
 
 <br>
 
