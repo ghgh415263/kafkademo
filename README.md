@@ -88,6 +88,23 @@
 
 <br>
 
+<h1> 리더 브로커 장애 처리 과정<h2>
+
+#### 1️⃣ 리더 브로커 장애 발생 🚨  
+- 해당 브로커가 다운됨.  
+
+#### 2️⃣ Kafka 컨트롤러(Controller)가 장애 감지  
+- 컨트롤러는 Zookeeper 또는 KRaft를 통해 브로커 상태를 모니터링함.  
+- 장애를 감지하면 ISR 중 하나를 새로운 리더로 승격.  
+
+#### 3️⃣ 메타데이터 업데이트  
+- Kafka 클러스터는 새로운 리더 정보를 모든 브로커와 클라이언트(Producer, Consumer)에게 전파함.  
+
+#### 4️⃣ Producer & Consumer 재연결 🔄  
+- Producer와 Consumer는 새로운 리더 정보를 받아서 자동으로 재연결.  
+
+
+
 <h1>Producer</h1>
 
 1. Producer
@@ -126,8 +143,8 @@
    - 키와 벨류를 deserializer 한다. deserializer는 컨슈머에서 설정해야하고 설정하려면 메시지 포멧에 대한 정보가 있어야 한다.
    - Recovery
      + 리더 브로커 장애:	메타데이터 업데이트 후 새로운 리더로 전환
-     + Consumer 장애:	Consumer Group 리밸런싱 후 자동 복구 (session.timeout.ms와 heartbeat.interval.ms)
-     + 데이터 유실 방지 : commit을 통해서 어디까지 처리했는지
+     + Consumer 장애:	Consumer Group 리밸런싱 후 자동 복구 (session.timeout.ms(컨슈머가 몇 ms 동안 heartbeat를 보내지 않으면 죽었다고 간주)와 heartbeat.interval.ms(컨슈머가 브로커에 heartbeat를 보내는 주기))
+     + 데이터 유실 방지 : commit을 통해서 어디까지 처리했는지. Offset을 commit하지 않으면 컨슈머가 재시작 시 이전 데이터부터 다시 읽을 수 있음.
       
 2. Consumer Group
    - 같은 그룹이면 각각 다른 파티션의 데이터를 읽는다.
