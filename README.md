@@ -118,7 +118,7 @@
      + 리더 브로커 장애:	메타데이터 업데이트 후 새로운 리더로 전환
      + 네트워크 장애:	delivery.timeout.ms(요청 및 재시도까지 포함한 타임아웃)와 request.timeout.ms(하나의 요청에 대한 타임아웃)로 타임아웃 설정
      + 성능 최적화:	linger.ms(배치 쌓는 대기시간)와 batch.size를 조정하여 메시지 배치 처리
-     + 데이터 유실 방지:	acks=all 및 min.insync.replicas 설정으로 안전한 저장 보장 (리더를 포함해 최소한 몇 개의 복제본이 데이터와 동기화되어 있어야 하는지 지정하는 것, **acks=all**과는 다르게, **min.insync.replicas**는 복제본의 동기화 상태를 기준으로 메시지를 처리하며, 지정된 수의 복제본이 동기화되지 않으면 메시지가 전송되지 않습니다.)
+     + 데이터 유실 방지:	acks=all 및 min.insync.replicas 설정으로 안전한 저장 보장 (min.insync.replicas는 리더를 포함해 최소한 몇 개의 복제본이 데이터와 동기화되어 있어야 하는지 지정하는 것, 브로커쪽 설정이다. 만약 브로커가 죽어서 replicas가 1이 되면 min.insync.replicas=2로 설정되어 있다면 ack 안보냄)
 
 2. 데이터 전송
    - properties로 연결할 카프카에 대한 정보 설정
