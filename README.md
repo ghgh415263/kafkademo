@@ -88,19 +88,19 @@
 
 <br>
 
-<h1> 리더 브로커 장애 처리 과정<h2>
+<h1> 리더 브로커 장애 처리 과정</h1>
 
-#### 1️⃣ 리더 브로커 장애 발생 🚨  
+### 1️⃣ 리더 브로커 장애 발생 🚨  
 - 해당 브로커가 다운됨.  
 
-#### 2️⃣ Kafka 컨트롤러(Controller)가 장애 감지  
+### 2️⃣ Kafka 컨트롤러(Controller)가 장애 감지  
 - 컨트롤러는 Zookeeper 또는 KRaft를 통해 브로커 상태를 모니터링함.  
 - 장애를 감지하면 ISR 중 하나를 새로운 리더로 승격.  
 
-#### 3️⃣ 메타데이터 업데이트  
+### 3️⃣ 메타데이터 업데이트  
 - Kafka 클러스터는 새로운 리더 정보를 모든 브로커와 클라이언트(Producer, Consumer)에게 전파함.  
 
-#### 4️⃣ Producer & Consumer 재연결 🔄  
+### 4️⃣ Producer & Consumer 재연결 🔄  
 - Producer와 Consumer는 새로운 리더 정보를 받아서 자동으로 재연결.  
 
 
@@ -272,18 +272,24 @@
 <h1>Kafka Streams</h1>
 
 1. 역할
-   - Kafka 내에서 실시간으로 데이터(스트림)를 처리하고 변환할 수 있도록 도와주는 분산형 스트리밍 애플리케이션을 개발할 때 사용
-   - 실시간 스트리밍 처리: Kafka에서 지속적으로 데이터를 읽고 처리하여 빠른 실시간 데이터 변환 및 분석 가능.
-   - Kafka와 강력한 통합: Kafka의 Producer & Consumer 역할을 동시에 수행하며, 별도의 메시지 큐 없이 직접 데이터를 처리 가능.
-   - Streams API 제공: 데이터를 변환, 필터링, 그룹화하는 등의 처리를 위한 다양한 API 제공 (map(), filter(), groupBy(), join(), windowing() 등).
+   - Kafka Streams는 Kafka 내에서 실시간 데이터 스트림을 처리하고 변환할 수 있도록 도와주는 경량 라이브러리 (스프링 부트에서 사용가)
+   - Kafka 기반의 분산 스트리밍 처리: Kafka에서 지속적으로 데이터를 읽고, 가공 및 분석한 후 다시 Kafka에 저장 가능
+   - 강력한 Kafka 통합: Kafka의 Consumer로 데이터를 읽고, 처리 후 Producer처럼 Kafka에 데이터 저장 (Producer 역할은 내부적으로 처리됨)
+   - Stateful & Stateless 처리 지원: 데이터를 단순 변환하는 Stateless 연산부터, 윈도우(Windowing) 기반 집계 및 조인(Join) 등 Stateful 연산 가능
+   - Streams API 제공: map(), filter(), groupBy(), join(), windowing() 등의 다양한 API 지원
 
 2. 동작
-   - Kafka Streams는 Producer + Consumer 역할을 동시에 수행하며, 토픽(Topic)으로부터 데이터를 가져와 가공한 후, 다시 Kafka 토픽에 저장하는 방식으로 동작
+   - Kafka Streams 애플리케이션은 Kafka Consumer 역할을 수행하며, Kafka Topic에서 데이터를 읽고 가공한 후 새로운 Kafka Topic에 저장
+   - 내부적으로 State Store(RocksDB)를 사용하여 상태 저장 가능
+   - Exactly-once Processing 지원 → 데이터 중복 없이 안정적인 스트리밍 처리 가능
+   - Scale-out 가능 → 동일한 Kafka Streams 애플리케이션을 여러 개 실행하면 자동으로 파티션 기반 병렬 처리 수행
 
 3. 예시
-   - 데이터 통계치: 데이터를 읽어와서 SUM이나 COUNT 토픽에 결과값을 넣는다.
-   - 실시간 로그 분석
-   - IoT 센서 데이터 처리
+   - 실시간 데이터 집계: 매출 데이터의 SUM, COUNT 등을 계산하여 Kafka Topic에 저장
+   - 이벤트 스트림 필터링: 특정 조건을 만족하는 이벤트만 필터링하여 새로운 Topic에 저장
+   - IoT 센서 데이터 분석: 센서에서 들어오는 데이터를 windowing()을 활용하여 1분 단위 평균 계산
+   - 사용자 행동 분석: 특정 시간 동안 동일한 사용자의 이벤트를 session windowing을 활용해 그룹화
+   - 다중 스트림 조인: 여러 Topic에서 데이터를 읽어 join()을 통해 관련 데이터를 결합
 <br>
 
 <h1>Kafka Schema Registry</h1>
@@ -319,7 +325,7 @@
 <h1>Kafka 초기설정</h1>
 
 1. Partition 초기설정
-   - 특정 Topic의 Partition을 증가시키면 Key ordering이 무너진다.
+   - 특정 Topic의 Partition을 증가시키면 기존에 특정 Partition으로 가던 Key가 다른 Partition으로 분산될 수 있어 순서(Ordering) 보장이 깨질 위험이 있음. Key ordering을 유지하려면 초기 Partition 개수를 충분히 고려하고, 미리 확장 가능한 구조로 설계하는 것이 중요함.
    - 설정 예시 
      + 브로커가 6개이하면 브로커 갯수 * 3
      + 브로커가 12개이상이면 브로커 갯수 *2
