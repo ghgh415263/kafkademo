@@ -133,6 +133,12 @@
    - retries 값이 크면 중복 메시지가 전송될 가능성이 있음 → Idempotence 설정 (enable.idempotence=true) 추천 (같은 메시지를 여러 번 전송해도 실제로 카프카에는 한 번만 저장)   프로듀서id + seq 로 중복확인 (seq는 프로듀서가 붙인다.)
    - max.in.flight.requests.per.connection 값이 너무 크면 순서 보장이 어려울 수 있음. 특히, 네트워크 장애나 응답 순서의 차이로 인해 발생할 수 있습니다.
 
+4. 멱등
+   - Kafka에서 각 Producer는 고유한 Producer ID (PID)를 가짐
+   - 새로운 Producer가 생성될 때마다 새로운 PID가 부여됨 (ex. 애플리케이션이 재시작되면 새로운 PID가 생성됨)
+   - Producer가 전송하는 각 메시지에 순차적인 Sequence Number를 부여
+   - Kafka Broker는 동일한 PID에서 중복된 Sequence Number가 들어오면 무시
+
 <br>
 
 <h1>Consumer</h1>
