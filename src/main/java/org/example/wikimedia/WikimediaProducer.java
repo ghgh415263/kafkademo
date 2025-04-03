@@ -18,7 +18,7 @@ public class WikimediaProducer {
 
         /* safe producer 설정하는 법 (kafka 3.0 미만 버전에만 safe 모드가 아니다.)
          * 1. ack = all
-         * 2. min.insync.replicas = 2
+         * 2. min.insync.replicas = 2 (브로커 쪽 설정이다. 리더 포함해서 2개이상의 레플리카가 유지되어야 한다.)
          * 3. enable.idempotence=true      요청1을 보내고 ack가 정상적으로 오다가 소실되면 retry되는데... 그걸 kafka가 알아채고 바로 ack 다시 날려줌
          * 4. retries=Max
          * 5. delivery.timeout.ms=120000
@@ -42,6 +42,10 @@ public class WikimediaProducer {
          * ack = all : leader와 repilca ack 다 기다림 -> 카프카 3부터는 이게 디폴트옵션 -> leader에게 데이터 보내면 leader가 replica에게 데이터 보냄 -> replica에게 ack를 받은 leader가 최종 ack를 보냄
          *             min.insync.replicas=1 하면 leader만 받으면 바로 ack, min.insync.replicas=2 하면 leader와 replica 최소1개가 받으면 ack (만약 replica factor가 3일때는 2개에만 저장하면 되니.. 파티션을 가진 브로커 하나가 죽는건 걍 넘어간다.)
          *             가장 추천하는건 replica factor=3 + min.insync.replicas=2
+         *
+         * -- min.insync.replicas 옵션 예시 --
+         * 1. replication.factor=3 + min.insync.replicas=2 + acks=all  (브로커가 총 3대이고 3개 다 살아있으면 레플리카도 3개 다 살아있음) -> ack 보냄
+         * 2. replication.factor=3 + min.insync.replicas=2 + acks=all  (브로커가 총 3대이고 1개만 살아있으면 레플리카도 1개만 살아있음) -> ack 못보냄
          */
         eventSource.start();
 
