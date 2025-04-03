@@ -29,10 +29,13 @@ public class ConsumerMainAssignment {
         // 컨슈머가 하나 더 추가되면 파티션 하나면 revoke한다. -> 나머지 파티션에서는 데이터를 읽는다.
         /*
         *  리밸런싱 전략
-        *  1. Eager : 모든 컨슈머가 자신에게 할당된 파티션을 반환(revoke) -> 재할당 (재할당 시간동안 모든 데이터처리 중단.) -> 재할당은 랜덤하다. Consumer1이 partition0을 처리했었더라도 다시 재할당 받는 것은 보장할 수 없다.
-        *     RangeAssignor, RoundRobinAssignor, StickyAssignor
+        *  1. Eager : 모든 컨슈머가 자신에게 할당된 파티션을 모두 반환(revoke) -> 재할당 (재할당 시간동안 모든 데이터처리 중단.) -> 재할당은 랜덤하다. Consumer1이 partition0을 처리했었더라도 다시 재할당 받는 것은 보장할 수 없다.
+        *     RangeAssignor (기본값, 토픽별 연속된 파티션을 그룹별로 할당)
+        *     RoundRobinAssignor (순차적으로 파티션을 고르게 분배)
+        *     StickyAssignor (이전 할당을 최대한 유지하면서 할당)
+        *
         *  2. Incremental Cooperative : 기존 파티션 할당을 유지하면서, 필요한 파티션만 재분배 -> 리밸런싱 중에도 데이터 처리가 계속 이루어질 수 있어, 중단 시간을 최소화 -> 가장 권장되는 방법
-        *     CooperativeStickyAssignor
+        *     CooperativeStickyAssignor (StickyAssignor에서 발전된 것것)
         */
 
         /**
