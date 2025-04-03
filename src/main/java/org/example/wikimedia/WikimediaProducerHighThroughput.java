@@ -13,7 +13,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /* 파티셔너 설정
- * 1. key 있을때, 같은 파티션으로 보내진다. 다만 토픽의 파티션이 증가하면 같은 키여도 같은 파티션으로 가는 것을 보장해주지 않는다.
+ * 1. key 있을때, 같은 파티션으로 보내진다. 다만 토픽의 파티션이 증가하면 같은 키여도 같은 파티션으로 가는 것을 보장해주지 않는다. (key.hashCode() % numPartitions로 파티션 결정)
  * 2. key 없을떄, 카프카 2.3이하에서는 라운드 로빈, 2.4부터는 sticky
  *               one batch per partition이라 라운드 로빈 방식은 여러 개의 작은 배치가 만들어 진다. 보내는 데이터가 5개고 파티션 갯수가 5개면 배치가 5개가 만들어질 수 있다.
  *               sticky는 배치를 파티션0부터 꽉꽉 채우는 방식이므로 배치 한방에 가능하다.
