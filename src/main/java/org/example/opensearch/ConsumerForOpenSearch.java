@@ -28,21 +28,20 @@ import java.util.Collections;
 import java.util.Properties;
 
 /*
- * Heartbeat는 컨슈머가 컨슈머 그룹에서 정상적으로 동작하고 있음을 Kafka에 주기적으로 알리는 신호입니다.
- * 즉, 컨슈머가 살아 있다는 것을 코디네이터(Consumer Group Coordinator)에게 알리는 역할!  컨슈머의 백그라운드 쓰레드에서 알림
+ * Heartbeat는 컨슈머가 컨슈머 그룹에서 정상적으로 동작하고 있음을 Kafka 안에 Consumer Group Coordinator에 주기적으로 알리는 신호입니다.
  *
  * 컨슈머가 정상적으로 동작 중인지 체크
  * 컨슈머가 중단되거나 장애가 발생하면, 일정 시간 후 자동으로 컨슈머 그룹에서 제거됨.
  *
  * Heartbeat 관련 주요 설정값
  *  - heartbeat.interval.ms	3초	   하트비트 전송 간격
- *  - session.timeout.ms	45초   이 시간 동안 하트비트가 없으면 컨슈머 그룹에서 제거
+ *  - session.timeout.ms	45초   이 시간 동안 하트비트가 없으면 컨슈머 그룹에서 제거 (heartbeat.interval.ms 보다 커야함)
  *  - max.poll.interval.ms	5분	  이 시간 동안 poll() 호출이 없으면 리밸런스 발생
  */
 
 
 /* Consumer Poll Thread
- * 이 스레드는 consumer.poll()을 반복적으로 호출하여 메시지를 계속해서 가져옵니다. poll()의 호출 간격을 적절하게 설정하는 것이 성능에 중요하며, 소비자는 일정한 간격으로 poll()을 호출해야 리밸런스 이벤트를 처리하고 세션 타임아웃을 방지할 수 있습니다.
+ * poll()의 호출 간격을 적절하게 설정하는 것이 성능에 중요하며, 소비자는 일정한 간격으로 poll()을 호출해야 리밸런스 이벤트를 처리하고 세션 타임아웃을 방지할 수 있습니다.
  *
  * 설정값
  *  - max.poll.records: 한 번에 가져올 수 있는 최대 메시지 수를 설정합니다.
@@ -128,6 +127,7 @@ public class ConsumerForOpenSearch {
                     consumer.commitSync();
                     log.info("Offsets have been committed!");
                 }
+                // Kafka에서 데이터를 가져옴. OpenSearch에 Bulk API로 한 번에 여러 건 저장
 
 
             }
@@ -164,8 +164,7 @@ public class ConsumerForOpenSearch {
 
         /* Offset Reset이 필요한 상황
          *  - 새로운 컨슈머 그룹이 처음 실행될 때 (저장된 오프셋이 없기 때문에 어디서부터 읽을지 결정해야 함)
-         *  - 컨슈머 그룹의 오프셋 정보가 만료되었을 때 (Kafka에서 log.retention.hours(기본 168시간 = 7일)를 초과하면 오프셋 정보가 사라짐)
-         *  - 특정 토픽의 파티션이 재할당되었을 때 (리밸런스 이후 일부 파티션이 새로운 컨슈머에게 할당되면, 이전 오프셋이 없을 수도 있음)
+         *  - 컨슈머 그룹의 오프셋 정보가 만료되었을 때 (Kafka에서 log.retention.hours(기본 168시간 = 7일)를 초과하면 토픽의 record가 사라짐, 오프셋 자체는 Kafka의 __consumer_offsets 토픽에 저장됨)
          *
          * Offset 유의사항
          *  - Offset Reset은 "오프셋 정보가 없을 때만" 적용됨 (기존 컨슈머 그룹이 이미 오프셋을 저장하고 있다면, auto.offset.reset 값은 무시됨)
@@ -206,9 +205,13 @@ public class ConsumerForOpenSearch {
          *      중복 처리 없음 (At Least Once의 단점 보완)
          *      추가 설정 필요 (기본 Kafka 설정만으로는 불가능)
          *      트랜잭션 또는 Idempotent Producer 필요
-         *          - Kafka 트랜잭션 사용 (Transactional Producer + Consumer) -> 프로듀서가 데이터 넣기전에 트랜잭션 얻고 커밋 -> 생산자는 read commited 옵션 사용
-         *          - Idempotent Producer (멱등 프로듀서) 사용 -> Kafka가 자동으로 중복된 메시지를 감지하고 제거 -> 컨슈머는 At Least Once나 혹은 다른 방법으로 멱등하게 만들어야함. (여기서는 opensearch id를 사용했음.)
+         *          - Kafka 트랜잭션 사용 (Transactional Producer + Consumer) -> 프로듀서가 데이터 넣기전에 트랜잭션 얻고 커밋 -> 소비자는 read commited 옵션 사용
+         *          - Idempotent Producer (멱등 프로듀서) 사용 -> Kafka가 자동으로 중복된 메시지를 감지하고 제거 -> 컨슈머는 At Least Once나 혹은 다른 방법으로 멱등하게 만들어야함. (여기서는 opensearch id를 사용했다. 일반적으로는 merge하는 방식 같은 게 있다.)
          */
+
+        /*
+        * Kafka에서 record가 멱등하려면 producer만 멱등하면 됨 그러나 전체 처리 과정이 멱등해야 한다면 consumer 측의 로직도 멱등하게 작성해야 함
+        */
         String groupId = "consumer-opensearch-demo";
 
         Properties properties = new Properties();
