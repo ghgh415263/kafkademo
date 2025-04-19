@@ -50,6 +50,12 @@ public class ProducerMain {
              *
              *
              * max.in.flight.requests.per.connection 값이 5일 때, sender 스레드는 동시에 전송할 수 있는 배치 수가 5개로 제한되므로, 그 이상의 배치가 전송 중이라면 추가적인 배치는 대기하게 됩니다.
+             *
+             * Topic-A에 2개의 파티션이 있다고 가정: Partition-0: 메시지 5개, Partition-1: 메시지 7개
+             * 각 파티션에 대해 프로듀서는 배치 크기(예: batch.size = 16384 바이트)에 맞춰서 메시지를 모읍니다.
+             * Partition-0의 메시지가 16KB에 도달하면 배치가 전송됩니다.
+             * Partition-1도 마찬가지로 16KB를 채우면 전송됩니다.
+             * 여러 파티션의 배치는 병렬로 전송되지만, 각 파티션별로 독립적인 배치로 전송됩니다.
              */
 
             /*
