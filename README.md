@@ -348,14 +348,24 @@
 ![image](https://github.com/user-attachments/assets/b29abdc4-b0e0-4128-b574-97c0d38b6b11)
 
 2. 동작
-   - Producer가 데이터를 Kafka로 전송
+   - Producer가 데이터를 Kafka로 전송 (Producer는 토픽 이름과 객체만 설정해서 보낼 뿐)
      + 메시지를 보내기 전에 Schema Registry에서 Schema ID 확인
-     + 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송 (schema id가 없으면 등록하기도함)
+     + 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송 (schema id가 없으면 등록)
    - Schema Registry가 Schema 저장 및 관리
      + 새로운 Schema가 등록되면 버전 관리
      + 기존 Schema와 비교하여 호환성 검사
    - Consumer가 데이터를 읽고 역직렬화(Deserialize)
      + Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환 (Consumer는 Kafka 메시지 안에 포함된 Schema ID를 읽고, 그 ID에 해당하는 Schema를 Schema Registry에서 조회해서 역직렬화)
+    
+     + 3. 실제로 어떻게 동작하나?
+user 객체 필드 추가:
+예를 들어 user 객체에 필드 age를 추가했다고 가정해 봅시다.
+Schema Registry에서는 기존 스키마와 새로운 스키마의 호환성 검사를 진행합니다.
+호환성 검사에서 문제가 없으면 새로운 Schema ID가 할당되고, 새로운 데이터 구조로 user 객체를 직렬화/역직렬화할 수 있게 됩니다.
+user 객체 필드 삭제:
+만약 필드를 삭제하는 변경을 했다면, 호환성 문제가 발생할 수 있습니다.
+예를 들어, name 필드를 삭제했다고 하면, 기존 데이터를 읽으려는 소비자는 호환성 문제가 발생할 수 있습니다.
+이 경우, 호환성 검사에 실패하면 Schema Registry에서 등록을 거부하게 됩니다.
   
 3. 장점
    - Kafka 브로커에 부하를 줄이기 위해
