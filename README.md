@@ -338,7 +338,8 @@
 <h1>Kafka Schema Registry</h1>
 
 1. 역할
-   - Kafka 메시지의 데이터 구조(Schema)를 중앙에서 관리하는 서비스 (카프카와 같이 쓰는 독립된 서비스) -> 이것을 통해서 카프카는 데이터의 형태에 대해서 신경쓰지 않고 데이터를 저장한다.
+   - Kafka 메시지의 데이터 구조(Schema)를 중앙에서 관리하는 서비스 (카프카와 같이 쓰는 독립된 서비스) -> 이것을 통해서 카프카는 데이터의 형태에 대해서 신경쓰지 않고 데이터를 저장한다. (Kafka는 바이트 배열(byte[]) 형태로 메시지를 저장하므로
+데이터의 구조(Schema)는 Kafka 자체가 아니라 Producer/Consumer의 책임)
    - Producer와 Consumer가 같은 데이터 구조(Schema)를 공유하도록 강제할 수 있음
    - 새로운 필드 추가 등 Schema 변경 시에도 호환성 유지 가능
    - Producer가 잘못된 데이터 형식을 보낼 경우, Schema Registry에서 거부하여 데이터 무결성을 유지
@@ -349,12 +350,12 @@
 2. 동작
    - Producer가 데이터를 Kafka로 전송
      + 메시지를 보내기 전에 Schema Registry에서 Schema ID 확인
-     + 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송
+     + 데이터를 Schema에 맞춰 직렬화(Serialize) 후 Kafka로 전송 (schema id가 없으면 등록하기도함)
    - Schema Registry가 Schema 저장 및 관리
      + 새로운 Schema가 등록되면 버전 관리
      + 기존 Schema와 비교하여 호환성 검사
    - Consumer가 데이터를 읽고 역직렬화(Deserialize)
-     + Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환
+     + Kafka에서 받은 데이터를 Schema Registry에서 가져온 Schema를 이용해 변환 (Consumer는 Kafka 메시지 안에 포함된 Schema ID를 읽고, 그 ID에 해당하는 Schema를 Schema Registry에서 조회해서 역직렬화)
   
 3. 장점
    - Kafka 브로커에 부하를 줄이기 위해
