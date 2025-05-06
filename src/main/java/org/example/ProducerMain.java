@@ -37,15 +37,8 @@ public class ProducerMain {
              * 2. Sender 쓰레드
              *      Kafka Producer 내부에서 메시지 전송을 담당하는 주요 쓰레드입니다.
              *      sender 스레드는 RecordAccumulator에 저장된 배치들을 모니터링합니다. RecordAccumulator는 파티션 별로 배치를 모은 자료구조입니다.
-             *      sender 스레드는 이 배치들이 **batch.size**에 도달하거나, linger.ms 시간이 경과하는 등 전송 가능한 조건이 되면, 해당 배치를 Kafka 브로커로 전송합니다. (kafka-producer-network-thread 한테 전송을 위임)
+             *      sender 스레드는 이 배치들이 **batch.size**에 도달하거나, linger.ms 시간이 경과하는 등 전송 가능한 조건이 되면, 해당 배치를 Kafka 브로커로 전송합니다.
              *      기본적으로 1개의 Sender 쓰레드가 생성됩니다.
-             * 3. kafka-producer-network-thread
-             *      Sender 쓰레드가 준비한 배치를 브로커로 전송하는 실제 네트워크 I/O 스레드입니다.
-             *      이 스레드는 배치 전송과 브로커와의 통신을 담당하고, 응답 처리, 오류 처리, 재시도 등을 관리합니다.
-             *      기본적으로 1개의 kafka-producer-network-thread가 생성됩니다.
-             * 4. kafka-producer-io-thread
-             *      I/O 스레드는 네트워크와 관련된 작업을 수행하며, kafka-producer-network-thread와는 별개의 스레드일 수 있습니다.
-             *      파티션 리더의 상태 확인 및 관리, 데이터를 클러스터의 적절한 브로커로 라우팅, I/O 작업 대기 및 처리
              *
              *
              *
@@ -63,7 +56,7 @@ public class ProducerMain {
              *
              * 1. send() 메서드를 호출하면, 메시지가 RecordAccumulator에 추가되어 배치로 묶입니다. 그리고 future 받음
              * 2. RecordAccumulator는 이 배치를 batches 큐에 저장하고, 이를 관리합니다. (RecordAccumulator는 batches라는 Map을 가지고 있는데, 이 Map의 Key는 TopicPartition이고, Value는 Deque<RecordBatch>이다.)
-             * 3. 큐에 저장된 배치는 전송 조건이 만족되면 kafka-producer-network-thread에 의해 브로커로 전송됩니다.
+             * 3. 큐에 저장된 배치는 전송 조건이 만족되면 브로커로 전송됩니다.
              *      배치 크기(batch.size): 배치가 설정된 크기를 초과하면 전송됩니다.
              *      대기 시간(linger.ms): 배치가 설정된 시간 동안 완전히 채워지지 않아도, 기다린 후 전송됩니다.
              */
@@ -71,7 +64,7 @@ public class ProducerMain {
             /** 콜백이 호출되는 시점
              * 1.send() 호출
              * 메시지는 RecordAccumulator에 추가되어 배치로 묶여 큐에 저장됩니다.
-             * Producer는 이 배치를 준비하고, 네트워크 스레드(kafka-producer-network-thread)가 브로커에 배치를 전송합니다.
+             * Producer는 이 배치를 준비하고, 브로커에 배치를 전송합니다.
              *
              * 2.브로커에 배치 전송
              * Producer는 메시지를 포함하는 배치를 브로커에 전송합니다.
@@ -79,7 +72,7 @@ public class ProducerMain {
              *
              * 3.브로커의 응답 처리
              * 브로커가 메시지를 받고 처리한 후 응답을 Producer로 보냅니다. 이 응답은 메시지가 성공적으로 처리되었는지 아니면 오류가 발생했는지를 포함합니다.
-             * 브로커가 응답을 보내면, kafka-producer-network-thread는 그 응답을 받아 콜백 함수를 호출합니다.
+             * 브로커가 응답을 보내면, Sender thread는 그 응답을 받아 콜백 함수를 호출합니다.
              *
              * 4.콜백 호출
              * 응답을 받은 후, 콜백이 호출됩니다.
